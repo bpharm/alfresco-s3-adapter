@@ -91,27 +91,4 @@
         </profile>
         -->
     </profiles>
-    <build>
-    <pluginManagement>
-    <plugins>
-    <!-- put aside some unwanted jars from war...-->
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-war-plugin</artifactId>
-            <version>2.1.1</version>
-            <configuration>
-                <overlays>
-                    <overlay>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpclient</artifactId>
-                        <excludes>
-                            <exclude>WEB-INF/lib/httpclient-4.5.2.jar</exclude>
-                        </excludes>
-                    </overlay>
-                </overlays>
-            </configuration>
-        </plugin>
-    </plugins>
-    </pluginManagement>
-    </build>
 </project>
