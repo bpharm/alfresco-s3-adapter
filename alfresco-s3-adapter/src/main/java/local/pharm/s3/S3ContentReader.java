@@ -2,6 +2,7 @@ package local.pharm.s3;
 
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import org.alfresco.repo.content.AbstractContentReader;
@@ -10,6 +11,7 @@ import org.alfresco.service.cmr.repository.ContentReader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
@@ -47,13 +49,14 @@ public class S3ContentReader extends AbstractContentReader {
     @Override
     protected ReadableByteChannel getDirectReadableChannel() throws ContentIOException {
 
-        if(!exists()) {
+        if (!exists()) {
             throw new ContentIOException("Content object does not exist on S3");
         }
-
         try {
-            return Channels.newChannel(fileObject.getObjectContent());
-        } catch ( Exception e ) {
+            S3Object object = client.getObject(new GetObjectRequest(
+                    bucketName, key));
+            return Channels.newChannel(object.getObjectContent());
+        } catch (Exception e) {
             throw new ContentIOException("Unable to retrieve content object from S3", e);
         }
     }
@@ -65,7 +68,7 @@ public class S3ContentReader extends AbstractContentReader {
 
     @Override
     public long getLastModified() {
-        if(!exists()) {
+        if (!exists()) {
             return 0L;
         }
         return fileObjectMetadata.getLastModified().getTime();
@@ -74,7 +77,7 @@ public class S3ContentReader extends AbstractContentReader {
     @Override
     public long getSize() {
 
-        if(!exists()) {
+        if (!exists()) {
             return 0L;
         }
 
@@ -86,9 +89,16 @@ public class S3ContentReader extends AbstractContentReader {
         S3Object object = null;
         try {
             logger.debug("GETTING OBJECT - BUCKET: " + bucketName + " KEY: " + key);
-            object = client.getObject(bucketName, key);
+            object = client.getObject(new GetObjectRequest(
+                    bucketName, key));
         } catch (Exception e) {
             logger.error("Unable to fetch S3 Object", e);
+        } finally {
+            try {
+                object.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         return object;
     }
@@ -97,7 +107,7 @@ public class S3ContentReader extends AbstractContentReader {
 
         ObjectMetadata metadata = null;
 
-        if(object != null) {
+        if (object != null) {
             metadata = object.getObjectMetadata();
         }
 
