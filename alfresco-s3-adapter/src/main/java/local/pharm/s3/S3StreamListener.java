@@ -31,11 +31,11 @@ public class S3StreamListener implements ContentStreamListener {
         long size = file.length();
         writer.setSize(size);
         try {
-            logger.debug("Writing to s3://" + writer.getBucketName() + "/" + writer.getKey());
-            AmazonS3 client = writer.getClient();
+            logger.debug("Writing to hotbox s3://" + writer.getBucketName() + "/" + writer.getKey());
+            AmazonS3 client = writer.getHbClient();
             client.putObject(new PutObjectRequest(writer.getBucketName(), writer.getKey(), writer.getTempFile()));
         } catch (Exception e) {
-            logger.error("S3StreamListener Failed to Upload File", e);
+            logger.error("S3StreamListener Failed to Hotbox Upload File", e);
         }
 
     }

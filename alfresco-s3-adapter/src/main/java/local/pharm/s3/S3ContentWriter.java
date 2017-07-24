@@ -22,22 +22,23 @@ public class S3ContentWriter extends AbstractContentWriter {
     private static final Log logger = LogFactory.getLog(S3ContentWriter.class);
 
     private AmazonS3 client;
+    private AmazonS3 hbClient;
     private String key;
     private String bucketName;
     private File tempFile;
     private long size;
 
-    public S3ContentWriter(String bucketName, String key, String contentUrl, ContentReader existingContentReader, AmazonS3 client) {
+    public S3ContentWriter(String bucketName, String key, String contentUrl, ContentReader existingContentReader, AmazonS3 hbClient) {
         super(contentUrl, existingContentReader);
         this.key = key;
-        this.client = client;
+        this.hbClient = hbClient;
         this.bucketName = bucketName;
         addListener(new S3StreamListener(this));
     }
 
     @Override
     protected ContentReader createReader() throws ContentIOException {
-        return new S3ContentReader(key, getContentUrl(), client, bucketName);
+        return new S3ContentReader(key, getContentUrl(), hbClient, bucketName);
     }
 
     @Override
@@ -69,7 +70,7 @@ public class S3ContentWriter extends AbstractContentWriter {
         this.size = size;
     }
 
-    public AmazonS3 getClient() {return client; }
+    public AmazonS3 getHbClient() {return hbClient; }
 
     public String getBucketName() {
         return bucketName;

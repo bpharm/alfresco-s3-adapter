@@ -2,6 +2,7 @@ package local.pharm.s3;
 
 import com.amazonaws.auth.*;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
@@ -41,9 +42,14 @@ public class S3ContentStore extends AbstractContentStore
     private ApplicationContext applicationContext;
 
     private AmazonS3 s3Client;
+    private AmazonS3 hbClient;
 
     private String accessKey;
     private String secretKey;
+
+    private String hbAccessKey;
+    private String hbSecretKey;
+
     private String bucketName;
     private String regionName;
     private String rootDirectory;
@@ -57,7 +63,7 @@ public class S3ContentStore extends AbstractContentStore
     public ContentReader getReader(String contentUrl) {
 
         String key = makeS3Key(contentUrl);
-        return new S3ContentReader(key, contentUrl, s3Client, bucketName);
+        return new S3ContentReader(key, contentUrl, hbClient, bucketName);
 
     }
 
@@ -65,18 +71,31 @@ public class S3ContentStore extends AbstractContentStore
         try {
             if(StringUtils.isNotBlank(this.accessKey) && StringUtils.isNotBlank(this.secretKey)) {
                 logger.debug("Found credentials in properties file");
-                BasicAWSCredentials awsCreds = new BasicAWSCredentials(this.accessKey, this.secretKey);
+                BasicAWSCredentials awsCreds = new BasicAWSCredentials(this.hbAccessKey, this.hbSecretKey);
+                /*
                 s3Client = AmazonS3ClientBuilder.standard()
                         .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
                         .withRegion(this.regionName)
                         .build();
+                */
+                hbClient = AmazonS3ClientBuilder.standard()
+                        .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+                        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("hb.bizmrg.com", this.regionName))
+                        .build();
             }
             else {
                 logger.debug("AWS Credentials not specified in properties, will fallback to credentials provider");
+                hbClient = AmazonS3ClientBuilder.standard()
+                        .withCredentials(new EnvironmentVariableCredentialsProvider())
+                        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("hb.bizmrg.com", this.regionName))
+                        .build();
+                /*
                 s3Client = AmazonS3ClientBuilder.standard()
                         .withCredentials(new EnvironmentVariableCredentialsProvider())
                         .withRegion(this.regionName)
                         .build();
+                */
+
 
             }
         } catch (Exception e) {
@@ -91,6 +110,14 @@ public class S3ContentStore extends AbstractContentStore
 
     public void setSecretKey(String secretKey) {
         this.secretKey = secretKey;
+    }
+
+    public void setHbAccessKey(String hbAccessKey) {
+        this.hbAccessKey = hbAccessKey;
+    }
+
+    public void setHbSecretKey(String hbSecretKey) {
+        this.hbSecretKey = hbSecretKey;
     }
 
     public void setBucketName(String bucketName) {
@@ -128,7 +155,7 @@ public class S3ContentStore extends AbstractContentStore
 
         String key = makeS3Key(contentUrl);
 
-        return new S3ContentWriter(bucketName, key, contentUrl, existingContentReader, s3Client);
+        return new S3ContentWriter(bucketName, key, contentUrl, existingContentReader, hbClient);
 
     }
 
@@ -177,11 +204,11 @@ public class S3ContentStore extends AbstractContentStore
     public boolean delete(String contentUrl) {
         try {
             String key = makeS3Key(contentUrl);
-            logger.debug("Deleting object from S3 with url: " + contentUrl + ", key: " + key);
-            s3Client.deleteObject(bucketName, key);
+            logger.debug("Deleting object from Hotbox S3 with url: " + contentUrl + ", key: " + key);
+            hbClient.deleteObject(bucketName, key);
             return true;
         } catch (Exception e) {
-            logger.error("Error deleting S3 Object", e);
+            logger.error("Error deleting Hotbox S3 Object", e);
         }
         return false;
     }

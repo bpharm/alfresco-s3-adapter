@@ -21,19 +21,20 @@ public class S3ContentReader extends AbstractContentReader {
 
     private String key;
     private AmazonS3 client;
+    private AmazonS3 hbClient;
     private String bucketName;
     private S3Object fileObject;
     private ObjectMetadata fileObjectMetadata;
 
     /**
-     * @param client
+     * @param hbClient
      * @param contentUrl the content URL - this should be relative to the root of the store
      * @param bucketName
      */
-    protected S3ContentReader(String key, String contentUrl, AmazonS3 client, String bucketName) {
+    protected S3ContentReader(String key, String contentUrl, AmazonS3 hbClient, String bucketName) {
         super(contentUrl);
         this.key = key;
-        this.client = client;
+        this.hbClient = hbClient;
         this.bucketName = bucketName;
         this.fileObject = getObject();
         this.fileObjectMetadata = getObjectMetadata(this.fileObject);
@@ -43,7 +44,7 @@ public class S3ContentReader extends AbstractContentReader {
     protected ContentReader createReader() throws ContentIOException {
 
         logger.debug("Called createReader for contentUrl -> " + getContentUrl() + ", Key: " + key);
-        return new S3ContentReader(key, getContentUrl(), client, bucketName);
+        return new S3ContentReader(key, getContentUrl(), hbClient, bucketName);
     }
 
     @Override
@@ -53,11 +54,11 @@ public class S3ContentReader extends AbstractContentReader {
             throw new ContentIOException("Content object does not exist on S3");
         }
         try {
-            S3Object object = client.getObject(new GetObjectRequest(
+            S3Object object = hbClient.getObject(new GetObjectRequest(
                     bucketName, key));
             return Channels.newChannel(object.getObjectContent());
         } catch (Exception e) {
-            throw new ContentIOException("Unable to retrieve content object from S3", e);
+            throw new ContentIOException("Unable to retrieve content object from Hotbox S3", e);
         }
     }
 
@@ -89,10 +90,10 @@ public class S3ContentReader extends AbstractContentReader {
         S3Object object = null;
         try {
             logger.debug("GETTING OBJECT - BUCKET: " + bucketName + " KEY: " + key);
-            object = client.getObject(new GetObjectRequest(
+            object = hbClient.getObject(new GetObjectRequest(
                     bucketName, key));
         } catch (Exception e) {
-            logger.error("Unable to fetch S3 Object", e);
+            logger.error("Unable to fetch Hotbox S3 Object", e);
         } finally {
             try {
                 object.close();
